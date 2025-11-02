@@ -7,7 +7,6 @@ ENV/
 
 # Data and models
 datasets/
-*.h5
 *.hdf5
 
 # OS files
