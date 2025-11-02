@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Detection Using Webcam</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <h1>Emotion Detection Using Webcam</h1>
+    <button id="start-btn">Start Emotion Detection</button>
+    <div id="emotion-result">
+        <p>Emotion: <span id="detected-emotion">Waiting for detection...</span></p>
+    </div>
+    <!-- Server stream will be shown here. Using an <img> tag allows the
+         server to push multipart JPEG frames (as implemented by /video_feed). -->
+    <img id="server-feed" width="640" height="480" alt="Video stream will appear here">
+
+    <script>
+        const serverFeed = document.getElementById('server-feed');
+        const startButton = document.getElementById('start-btn');
+
+        startButton.addEventListener('click', () => {
+            serverFeed.src = '/video_feed';
+        });
+    </script>
+</body>
+</html>
