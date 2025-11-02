@@ -1,9 +1,6 @@
 Flask==3.1.2
-numpy==2.3.4
-tensorflow-cpu
-opencv-python
-tensorflow==2.20.0
+numpy==1.26.4
+tensorflow-cpu==2.20.0
 opencv-python==4.8.1.78
 requests==2.31.0
 gunicorn==21.2.0
-
