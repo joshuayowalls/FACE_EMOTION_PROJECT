@@ -1,6 +1,13 @@
+# === Web Framework ===
 Flask==3.1.2
-numpy==1.26.4
-tensorflow-cpu==2.20.0
-opencv-python==4.8.1.78
-requests==2.31.0
 gunicorn==21.2.0
+
+# === Core Scientific Libraries ===
+numpy==1.26.4  # Last stable 1.x release compatible with OpenCV & TensorFlow
+opencv-python==4.8.1.78
+
+# === Machine Learning ===
+tensorflow-cpu==2.20.0  # Remove 'tensorflow' to avoid duplication/conflict
+
+# === Utilities ===
+requests==2.31.0
