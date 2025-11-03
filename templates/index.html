@@ -1,28 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Emotion Detection Using Webcam</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Emotion Detection</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <h1>Emotion Detection Using Webcam</h1>
-    <button id="start-btn">Start Emotion Detection</button>
-    <div id="emotion-result">
-        <p>Emotion: <span id="detected-emotion">Waiting for detection...</span></p>
+  <div class="container">
+    <div class="header">
+      <div class="brand-badge">ED</div>
+      <div>
+        <h1>Live Emotion Detection</h1>
+        <div class="lead">Streaming from your webcam</div>
+      </div>
     </div>
-    <!-- Server stream will be shown here. Using an <img> tag allows the
-         server to push multipart JPEG frames (as implemented by /video_feed). -->
-    <img id="server-feed" width="640" height="480" alt="Video stream will appear here">
 
-    <script>
-        const serverFeed = document.getElementById('server-feed');
-        const startButton = document.getElementById('start-btn');
+    <div class="main-grid">
+      <div class="video-card">
+        <img src="{{ url_for('video_feed') }}" alt="Video Feed">
+      </div>
 
-        startButton.addEventListener('click', () => {
-            serverFeed.src = '/video_feed';
-        });
-    </script>
+      <aside class="info-panel">
+        <h3>Status</h3>
+        <div class="status">
+          <div class="pill">Camera: connected</div>
+          <div class="pill">Model: loaded</div>
+        </div>
+        <div class="emotion-badge">neutral</div>
+        <div class="small">Tip: Allow webcam access in your browser to stream.</div>
+      </aside>
+    </div>
+  </div>
 </body>
 </html>
