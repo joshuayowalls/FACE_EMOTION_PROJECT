@@ -7,7 +7,7 @@ numpy==2.3.4  # Last stable 1.x release compatible with OpenCV & TensorFlow
 opencv-python==4.11.0.86
 
 # === Machine Learning ===
-tensorflow-cpu==2.20.0  # Remove 'tensorflow' to avoid duplication/conflict
+tensorflow==2.20.0  # Remove 'tensorflow' to avoid duplication/conflict
 
 # === Utilities ===
 requests==2.31.0
