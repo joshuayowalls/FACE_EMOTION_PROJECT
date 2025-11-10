@@ -3,34 +3,359 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live Emotion Detection</title>
+  <title>Emotion Detection System</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
   <div class="container">
+    <!-- Header -->
     <div class="header">
       <div class="brand-badge">ED</div>
       <div>
-        <h1>Live Emotion Detection</h1>
-        <div class="lead">Streaming from your webcam</div>
+        <h1>Emotion Detection System</h1>
+        <div class="lead">Real-time & Image-based Emotion Analysis</div>
       </div>
     </div>
 
-    <div class="main-grid">
-      <div class="video-card">
-        <img src="{{ url_for('video_feed') }}" alt="Video Feed">
-      </div>
+    <!-- Navigation Tabs -->
+    <div class="tabs">
+      <button class="tab-button active" onclick="switchTab('webcam')">📹 Live Webcam</button>
+      <button class="tab-button" onclick="switchTab('upload')">📤 Upload Image</button>
+      <button class="tab-button" onclick="switchTab('history')">📊 History</button>
+    </div>
 
-      <aside class="info-panel">
-        <h3>Status</h3>
-        <div class="status">
-          <div class="pill">Camera: connected</div>
-          <div class="pill">Model: loaded</div>
+    <!-- Webcam Tab -->
+    <div id="webcam" class="tab-content active">
+      <div class="main-grid">
+        <div class="video-card">
+          <img id="videoFeed" src="{{ url_for('video_feed') }}" alt="Live Video Feed">
         </div>
-        <div class="emotion-badge">neutral</div>
-        <div class="small">Tip: Allow webcam access in your browser to stream.</div>
-      </aside>
+
+        <aside class="info-panel">
+          <h3>Status</h3>
+          <div class="status">
+            <div class="pill">📹 Webcam: Active</div>
+            <div class="pill">🤖 Model: Loaded</div>
+          </div>
+          
+          <div class="emotion-display">
+            <div class="emotion-label">Detected Emotion:</div>
+            <div class="emotion-badge" id="currentEmotion">Neutral</div>
+          </div>
+
+          <div class="capture-section">
+            <input type="text" id="webcamUserName" placeholder="Enter your name" class="input-field">
+            <button onclick="captureFrame()" class="btn btn-primary">📸 Capture & Save</button>
+          </div>
+
+          <div class="tips">
+            <strong>💡 Tips:</strong>
+            <ul>
+              <li>Allow webcam access in browser</li>
+              <li>Good lighting improves accuracy</li>
+              <li>Face should be clearly visible</li>
+            </ul>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- Upload Tab -->
+    <div id="upload" class="tab-content">
+      <div class="upload-container">
+        <div class="upload-box">
+          <h3>Upload an Image</h3>
+          
+          <div class="form-group">
+            <label for="userName">Your Name:</label>
+            <input type="text" id="userName" placeholder="Enter your name" class="input-field">
+          </div>
+
+          <div class="form-group">
+            <label for="imageFile">Select Image:</label>
+            <div class="file-input-wrapper">
+              <input type="file" id="imageFile" accept="image/*" class="file-input">
+              <span class="file-input-label">Choose file or drag here</span>
+            </div>
+            <small>Supported: PNG, JPG, JPEG, GIF (Max 16MB)</small>
+          </div>
+
+          <button onclick="uploadImage()" class="btn btn-primary btn-large">🚀 Analyze Image</button>
+
+          <div id="uploadResult" class="result-box" style="display: none;">
+            <h4>Detection Result:</h4>
+            <div class="result-content">
+              <div class="result-emotion" id="resultEmotion"></div>
+              <div class="result-meta" id="resultMeta"></div>
+            </div>
+          </div>
+
+          <div id="uploadError" class="error-box" style="display: none;"></div>
+          <div id="uploadLoading" class="loading" style="display: none;">Processing...</div>
+        </div>
+
+        <div class="image-preview-box">
+          <div class="preview-placeholder" id="previewPlaceholder">
+            Image preview will appear here
+          </div>
+          <img id="previewImage" src="" alt="Preview" style="display: none; max-width: 100%; border-radius: 10px;">
+        </div>
+      </div>
+    </div>
+
+    <!-- History Tab -->
+    <div id="history" class="tab-content">
+      <div class="history-container">
+        <h3>Detection History</h3>
+        
+        <div class="form-group">
+          <label for="historyUserName">Filter by Name (optional):</label>
+          <input type="text" id="historyUserName" placeholder="Enter name" class="input-field">
+          <button onclick="loadHistory()" class="btn btn-secondary">🔍 Search</button>
+          <button onclick="loadStatistics()" class="btn btn-secondary">📈 Statistics</button>
+        </div>
+
+        <div class="stats-box" id="statsBox" style="display: none;">
+          <h4>Emotion Statistics</h4>
+          <div id="statsList" class="stats-list"></div>
+        </div>
+
+        <div class="history-list" id="historyList">
+          <p class="placeholder">No history yet. Start by capturing or uploading images!</p>
+        </div>
+      </div>
     </div>
   </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast"></div>
+
+  <script>
+    // Tab Switching
+    function switchTab(tabName) {
+      // Hide all tabs
+      const tabs = document.querySelectorAll('.tab-content');
+      tabs.forEach(tab => tab.classList.remove('active'));
+      
+      // Remove active class from all buttons
+      const buttons = document.querySelectorAll('.tab-button');
+      buttons.forEach(btn => btn.classList.remove('active'));
+      
+      // Show selected tab
+      document.getElementById(tabName).classList.add('active');
+      event.target.classList.add('active');
+      
+      // Load history when switching to history tab
+      if (tabName === 'history') {
+        loadHistory();
+      }
+    }
+
+    // Toast Notification
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = `toast show ${type}`;
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    // Webcam Functions
+    function captureFrame() {
+      const userName = document.getElementById('webcamUserName').value.trim();
+      
+      if (!userName) {
+        showToast('Please enter your name', 'error');
+        return;
+      }
+
+      fetch('/capture', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ user_name: userName })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          showToast(`✓ Captured! Emotion: ${data.emotion}`, 'success');
+        } else {
+          showToast(`Error: ${data.error}`, 'error');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showToast('Capture failed', 'error');
+      });
+    }
+
+    // Update current emotion every 2 seconds
+    setInterval(() => {
+      fetch('/api/emotion')
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('currentEmotion').textContent = data.emotion || 'Neutral';
+        })
+        .catch(error => console.error('Error fetching emotion:', error));
+    }, 2000);
+
+    // Upload Functions
+    const imageFileInput = document.getElementById('imageFile');
+    const previewImage = document.getElementById('previewImage');
+    const previewPlaceholder = document.getElementById('previewPlaceholder');
+
+    // Drag and drop
+    document.querySelector('.file-input-wrapper').addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.target.style.backgroundColor = '#f0f0f0';
+    });
+
+    document.querySelector('.file-input-wrapper').addEventListener('dragleave', (e) => {
+      e.target.style.backgroundColor = '';
+    });
+
+    document.querySelector('.file-input-wrapper').addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.target.style.backgroundColor = '';
+      imageFileInput.files = e.dataTransfer.files;
+      previewImage.src = URL.createObjectURL(e.dataTransfer.files[0]);
+      previewImage.style.display = 'block';
+      previewPlaceholder.style.display = 'none';
+    });
+
+    imageFileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        previewImage.src = URL.createObjectURL(e.target.files[0]);
+        previewImage.style.display = 'block';
+        previewPlaceholder.style.display = 'none';
+      }
+    });
+
+    function uploadImage() {
+      const userName = document.getElementById('userName').value.trim();
+      const imageFile = document.getElementById('imageFile').files[0];
+
+      if (!userName) {
+        showToast('Please enter your name', 'error');
+        return;
+      }
+
+      if (!imageFile) {
+        showToast('Please select an image', 'error');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', imageFile);
+      formData.append('user_name', userName);
+
+      document.getElementById('uploadLoading').style.display = 'block';
+      document.getElementById('uploadResult').style.display = 'none';
+      document.getElementById('uploadError').style.display = 'none';
+
+      fetch('/upload', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('uploadLoading').style.display = 'none';
+        
+        if (data.success) {
+          document.getElementById('resultEmotion').textContent = `Emotion: ${data.emotion}`;
+          document.getElementById('resultMeta').textContent = `User: ${data.user_name} | Time: ${new Date(data.timestamp).toLocaleString()}`;
+          document.getElementById('uploadResult').style.display = 'block';
+          showToast(`✓ Analysis complete! Emotion: ${data.emotion}`, 'success');
+        } else {
+          document.getElementById('uploadError').textContent = `Error: ${data.error}`;
+          document.getElementById('uploadError').style.display = 'block';
+          showToast(`Error: ${data.error}`, 'error');
+        }
+      })
+      .catch(error => {
+        document.getElementById('uploadLoading').style.display = 'none';
+        console.error('Error:', error);
+        document.getElementById('uploadError').textContent = `Error: ${error.message}`;
+        document.getElementById('uploadError').style.display = 'block';
+        showToast('Upload failed', 'error');
+      });
+    }
+
+    // History Functions
+    function loadHistory() {
+      const userName = document.getElementById('historyUserName').value.trim();
+      
+      let url = '/api/history';
+      if (userName) {
+        url += `?user_name=${encodeURIComponent(userName)}`;
+      }
+
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          const historyList = document.getElementById('historyList');
+          
+          if (data.records && data.records.length > 0) {
+            historyList.innerHTML = data.records.map(record => `
+              <div class="history-item">
+                <div class="history-emotion">${record.emotion}</div>
+                <div class="history-meta">
+                  <strong>${record.user_name}</strong><br>
+                  ${new Date(record.timestamp).toLocaleString()}<br>
+                  <small>${record.method === 'webcam' ? '📹 Webcam' : '📤 Upload'}</small>
+                </div>
+              </div>
+            `).join('');
+          } else {
+            historyList.innerHTML = '<p class="placeholder">No records found</p>';
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          showToast('Failed to load history', 'error');
+        });
+    }
+
+    function loadStatistics() {
+      const userName = document.getElementById('historyUserName').value.trim();
+      
+      let url = '/api/statistics';
+      if (userName) {
+        url += `?user_name=${encodeURIComponent(userName)}`;
+      }
+
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          const statsBox = document.getElementById('statsBox');
+          const statsList = document.getElementById('statsList');
+          
+          if (Object.keys(data.statistics).length > 0) {
+            statsList.innerHTML = Object.entries(data.statistics).map(([emotion, count]) => `
+              <div class="stat-item">
+                <span>${emotion}</span>
+                <span class="stat-count">${count}</span>
+                <div class="stat-bar" style="width: ${Math.min(count * 10, 100)}%"></div>
+              </div>
+            `).join('');
+            statsBox.style.display = 'block';
+          } else {
+            statsBox.style.display = 'none';
+            showToast('No statistics available', 'info');
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          showToast('Failed to load statistics', 'error');
+        });
+    }
+
+    // Load initial history on page load
+    window.addEventListener('load', () => {
+      loadHistory();
+    });
+  </script>
 </body>
 </html>
