@@ -239,25 +239,54 @@ def get_stats():
 def capture_frame():
     """Capture and save current frame from webcam."""
     try:
-        user_name = request.json.get('user_name') # type: ignore
-        
-        if not user_name or not user_name.strip():
+        # Accept either a client-sent image (base64) or capture from server camera
+        data = None
+        try:
+            data = request.get_json(force=True)
+        except Exception:
+            data = request.json
+
+        user_name = None
+        image_b64 = None
+        if isinstance(data, dict):
+            user_name = data.get('user_name')
+            image_b64 = data.get('image')
+
+        if not user_name or not str(user_name).strip():
             return jsonify({'error': 'User name is required'}), 400
-        
-        camera = get_camera()
-        success, frame = camera.read()
-        
-        if not success:
-            return jsonify({'error': 'Failed to capture frame'}), 400
-        
+
+        frame = None
+        # If client provided an image (data URL), decode it
+        if image_b64:
+            try:
+                import base64
+                # strip header if present
+                if ',' in image_b64:
+                    image_b64 = image_b64.split(',', 1)[1]
+                img_bytes = base64.b64decode(image_b64)
+                img = Image.open(io.BytesIO(img_bytes)).convert('RGB')
+                frame = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+            except Exception as e:
+                print(f"Error decoding client image: {e}")
+                return jsonify({'error': 'Invalid image data'}), 400
+        else:
+            # Fallback: try to capture from server camera
+            camera = get_camera()
+            success, frame = camera.read()
+            if not success or frame is None:
+                return jsonify({'error': 'Failed to capture frame from server camera. If you are using your browser webcam, allow camera access and try Capture again.'}), 400
+
         # Detect emotion
         emotion = detect_emotion(frame)
-        
+
         # Save frame
         filename = secure_filename(f"{user_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_webcam.jpg")
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        cv2.imwrite(filepath, frame)
-        
+        try:
+            cv2.imwrite(filepath, frame)
+        except Exception as e:
+            print(f"Failed to write image to disk: {e}")
+
         # Store in database
         record_id = insert_detection(
             user_name=user_name,
@@ -265,7 +294,7 @@ def capture_frame():
             detected_emotion=emotion,
             detection_method='webcam'
         )
-        
+
         return jsonify({
             'success': True,
             'emotion': emotion,

@@ -173,26 +173,59 @@
         showToast('Please enter your name', 'error');
         return;
       }
+      const video = document.getElementById('webcamVideo');
+      const useDirect = video && video.style.display !== 'none' && video.srcObject;
 
-      fetch('/capture', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ user_name: userName })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          showToast(`✓ Captured! Emotion: ${data.emotion}`, 'success');
-        } else {
-          showToast(`Error: ${data.error}`, 'error');
-        }
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        showToast('Capture failed', 'error');
-      });
+      if (useDirect) {
+        // Capture current frame from the video element to a canvas and send as base64
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+
+        fetch('/capture', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ user_name: userName, image: dataUrl })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            showToast(`✓ Captured! Emotion: ${data.emotion}`, 'success');
+          } else {
+            showToast(`Error: ${data.error}`, 'error');
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          showToast('Capture failed', 'error');
+        });
+      } else {
+        // Fallback: ask server to capture from its camera (existing behavior)
+        fetch('/capture', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ user_name: userName })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            showToast(`✓ Captured! Emotion: ${data.emotion}`, 'success');
+          } else {
+            showToast(`Error: ${data.error}`, 'error');
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          showToast('Capture failed', 'error');
+        });
+      }
     }
 
     // Update current emotion every 2 seconds
